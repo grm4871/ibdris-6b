@@ -125,10 +125,10 @@ function evalPlot(plot, x) {
         tokens.forEach((token, index, _) => {
             if (token === Tokens.OPERATOR && index > 0 && values[index] == '^') {
                 if (tokens[index-1] === Tokens.CONSTANT && tokens[index+1] === Tokens.CONSTANT) {
-                    values[index] = values[index-1] ^ values[index+1];
-                    tokens[index-1] = Tokens.CONSTANT;
-                    tokens = tokens.slice(0,index-1) + tokens[index] + tokens.slice(index+2, -1);
-                    values = values.slice(0,index-1) + values[index] + values.slice(index+2, -1);
+                    values[index] = values[index-1] ** values[index+1];
+                    tokens[index] = Tokens.CONSTANT;
+                    tokens = tokens.slice(0,index-1).concat(tokens[index]).concat(tokens.slice(index+2, -1));
+                    values = values.slice(0,index-1).concat(values[index]).concat(values.slice(index+2, -1));
                 }
             }
         });
@@ -141,9 +141,9 @@ function evalPlot(plot, x) {
                     } else {
                         values[index] = values[index-1]*1.0 / values[index+1];
                     }
-                    tokens[index-1] = Tokens.CONSTANT;
-                    tokens = tokens.slice(0,index-1) + tokens[index] + tokens.slice(index+2, -1);
-                    values = values.slice(0,index-1) + values[index] + values.slice(index+2, -1);
+                    tokens[index] = Tokens.CONSTANT;
+                    tokens = tokens.slice(0,index-1).concat(tokens[index]).concat(tokens.slice(index+2, -1));
+                    values = values.slice(0,index-1).concat(values[index]).concat(values.slice(index+2, -1));
                 }
             }
         });
@@ -156,9 +156,9 @@ function evalPlot(plot, x) {
                     } else {
                         values[index] = values[index-1] - values[index+1];
                     }
-                    tokens[index-1] = Tokens.CONSTANT;
-                    tokens = tokens.slice(0,index-1) + tokens[index] + tokens.slice(index+2, -1);
-                    values = values.slice(0,index-1) + values[index] + values.slice(index+2, -1);
+                    tokens[index] = Tokens.CONSTANT;
+                    tokens = tokens.slice(0,index-1).concat(tokens[index]).concat(tokens.slice(index+2, -1));
+                    values = values.slice(0,index-1).concat(values[index]).concat(values.slice(index+2, -1));
                 }
             }
         });
@@ -184,8 +184,8 @@ function draw(graph) {
     console.log(graph);
     console.log(graph.plots);
     graph.plots.forEach(plot => {
-        for (let i = 0; i < 5; i++) {
-            c.lineTo(i, evalPlot(plot, i));
+        for (let i = 0; i < 50; i++) {
+            c.lineTo(cw*i / 5, ch - evalPlot(plot, i));
             c.stroke();
         }
     });
