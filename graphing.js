@@ -7,7 +7,7 @@ canvas.height = ch;
 
 var c = canvas.getContext('2d');
 
-// GLOBAL GRAPH STATE -- I'm using a class here, but it's more like a struct
+// GLOBAL GRAPH STATE -- just using this as a struct
 class Graph {
     constructor() {
         this.xScale = 10;
@@ -35,47 +35,51 @@ class Plot {
         var constbuffer = "";
         var funcbuffer = "";
         // read through the string
-        // i add one extra space so that we can flush any buffer
-        (input_Str + " ").forEach((c, _, _) => {
+        // i add one extra iteration so that we can flush any buffer
+        for (var i = 0; i < input_Str.length + 1; i++) {
+            console.log(this.tokens);
+            var st = (input_Str.concat(" "))[i];
             // constants
-            if ((c >= '0' && c <= '9') || c == '.') {
-                constbuffer.append(c);
-                return;
+            if ((st >= '0' && st <= '9') || st == '.') {
+                constbuffer = constbuffer.concat(st);
+                continue;
             } else if (constbuffer != "") { // end of constant. flush buffer
-                this.tokens.concat(Tokens.CONSTANT);
-                this.values.concat(parseInt(constbuffer));
+                this.tokens = this.tokens.concat(Tokens.CONSTANT);
+                this.values = this.values.concat(parseInt(constbuffer));
                 constbuffer = "";
             }
             // parens
-            if (c == '(') { 
-                this.tokens.concat(Tokens.LPAREN);
-                this.values.concat(-1);
-                return;
-            } if (c == ')') {
-                this.tokens.concat(Tokens.RPAREN);
-                this.values.concat(-1);
-                return;
+            if (st == '(') { 
+                this.tokens = this.tokens.concat(Tokens.LPAREN);
+                this.values = this.values.concat(-1);
+                continue;
+            } if (st == ')') {
+                this.tokens = this.tokens.concat(Tokens.RPAREN);
+                this.values = this.values.concat(-1);
+                continue;
             }
             // operators
-            if (c == '+' || c == '-' || c == '*' || c == '/' || c == '^') {
-                this.tokens.concat(Tokens.OPERATOR);
-                this.values.concat(c);
-                return;
+            if (st == '+' || st == '-' || st == '*' || st == '/' || st == '^') {
+                this.tokens = this.tokens.concat(Tokens.OPERATOR);
+                this.values = this.values.concat(st);
+                continue;
             }
             // special functions or variables or syntax error
-            funcbuffer.concat(c);
+            funcbuffer.concat(st);
             if (funcbuffer == "sin" || funcbuffer == "cos" || funcbuffer == "tan") { // end of function. flush buffer
-                this.tokens.concat(Tokens.SP_FUNCTION);
-                this.values.concat(funcbuffer);
+                this.tokens = this.tokens.concat(Tokens.SP_FUNCTION);
+                this.values = this.values.concat(funcbuffer);
                 funcbuffer = "";
 
             }
-            if (c == 'x') {
-                this.tokens.concat(Tokens.VARIABLE);
-                this.values.concat(-1);
-                return;
+            if (st == 'x') {
+                console.log('hi');
+                this.tokens = this.tokens.concat(Tokens.VARIABLE);
+                this.values = this.values.concat(-1);
+                continue;
             }
-        });
+        }
+
     }
 }
 
@@ -101,17 +105,18 @@ function evalPlot(plot, x) {
             } else if (token === Tokens.RPAREN) {
                 insideParen = false;
                 // evaluate everything inside these parens
-                newtokens.concat(Tokens.CONSTANT);
-                newvalues.concat(evalSymb(innertokens, innervalues, x));
+                newtokens = newtokens.concat(Tokens.CONSTANT);
+                newvalues = newvalues.concat(evalSymb(innertokens, innervalues, x));
                 innertokens = [];
                 innervalues = [];
             }
+            // split into two lists of tokens, one inside the paren, one outside
             if (insideParen) {
-                innertokens.concat(token);
-                innervalues.concat(values[index]);
+                innertokens = innertokens.concat(token);
+                innervalues = innervalues.concat(values[index]);
             } else {
-                newtokens.concat(token);
-                newtokens.concat(token);
+                newtokens = newtokens.concat(token);
+                newvalues = newvalues.concat(values[index]);
             }
         }) // we now have a token set without parentheses
         tokens = newtokens;
@@ -121,11 +126,9 @@ function evalPlot(plot, x) {
             if (token === Tokens.OPERATOR && index > 0 && values[index] == '^') {
                 if (tokens[index-1] === Tokens.CONSTANT && tokens[index+1] === Tokens.CONSTANT) {
                     values[index] = values[index-1] ^ values[index+1];
-                    tokens.pop(index-1);
-                    tokens.pop(index+1);
-                    tokens[index] = Tokens.CONSTANT;
-                    values.pop(index-1);
-                    values.pop(index+1);
+                    tokens[index-1] = Tokens.CONSTANT;
+                    tokens = tokens.slice(0,index-1) + tokens[index] + tokens.slice(index+2, -1);
+                    values = values.slice(0,index-1) + values[index] + values.slice(index+2, -1);
                 }
             }
         });
@@ -138,11 +141,9 @@ function evalPlot(plot, x) {
                     } else {
                         values[index] = values[index-1]*1.0 / values[index+1];
                     }
-                    tokens.pop(index-1);
-                    tokens.pop(index+1);
-                    tokens[index] = Tokens.CONSTANT;
-                    values.pop(index-1);
-                    values.pop(index+1);
+                    tokens[index-1] = Tokens.CONSTANT;
+                    tokens = tokens.slice(0,index-1) + tokens[index] + tokens.slice(index+2, -1);
+                    values = values.slice(0,index-1) + values[index] + values.slice(index+2, -1);
                 }
             }
         });
@@ -155,33 +156,38 @@ function evalPlot(plot, x) {
                     } else {
                         values[index] = values[index-1] - values[index+1];
                     }
-                    tokens.pop(index-1);
-                    tokens.pop(index+1);
-                    tokens[index] = Tokens.CONSTANT;
-                    values.pop(index-1);
-                    values.pop(index+1);
+                    tokens[index-1] = Tokens.CONSTANT;
+                    tokens = tokens.slice(0,index-1) + tokens[index] + tokens.slice(index+2, -1);
+                    values = values.slice(0,index-1) + values[index] + values.slice(index+2, -1);
                 }
             }
         });
         // now, we should have a single constant symbol.
         // if not, there was an error.
         // TODO error checking
+        console.log(values);
         return values[0];
     }
-    evalSymb(plot.tokens, plot.values, x);
+    return evalSymb(Array.from(plot.tokens), Array.from(plot.values), x);
 }
 
-//window.addEventListener('keyup', function(event) {
- 
+var g = new Graph();
+
+function graph() {
+    g.plots = g.plots.concat(new Plot(document.getElementById("calcEntry").value));
+    console.log(g.plots);
+    draw(g);
+}
+
 function draw(graph) {
     c.clearRect(0, 0, cw, ch);
-    
-    graph.plots.forEach((plot, _, _) => {
-        for (let i = 0; i < cw; i++) {
-            evalPlot(plot, i);
+    console.log(graph);
+    console.log(graph.plots);
+    graph.plots.forEach(plot => {
+        for (let i = 0; i < 5; i++) {
+            c.lineTo(i, evalPlot(plot, i));
+            c.stroke();
         }
     });
 }
 
-var g = new Graph();
-draw(g);
