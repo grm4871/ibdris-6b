@@ -184,8 +184,8 @@ function draw(graph) {
     console.log(graph);
     console.log(graph.plots);
     graph.plots.forEach(plot => {
-        for (let i = 0; i < 50; i++) {
-            c.lineTo(cw*i / 5, ch - evalPlot(plot, i));
+        for (let i = 0; i < 100; i++) {
+            c.lineTo(cw*i / 100, ch - evalPlot(plot, i));
             c.stroke();
         }
     });
